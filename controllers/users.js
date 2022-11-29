@@ -11,9 +11,30 @@ const getAllUsers = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { body } = req;
-    console.log(body);
-    // Postgres you can insert RETURNING *
+    const {
+      body: { first_name, last_name, age }
+    } = req;
+    /* 
+      Some validations (this is completely outside the scope but useful, in the future something like Express Validator https://express-validator.github.io/docs/
+      or JOI will come in handy)
+        - First name, last name and age are required
+        - First name and last name should be strings
+        - Age should be a number
+    */
+    if (!first_name || !last_name || !age)
+      throw new Error('First name, last name and age are required');
+    if (typeof first_name !== 'string' || typeof last_name !== 'string')
+      throw new Error('First name and last name should be strings');
+    if (typeof age !== 'number') throw new Error('Age should be a number');
+    // Insert - https://www.postgresql.org/docs/current/dml-returning.html
+    const {
+      rows: [newUser]
+    } = await db.query(
+      'INSERT INTO users(first_name, last_name, age) VALUES($1, $2, $3) RETURNING *;',
+      [first_name, last_name, age]
+    );
+    // Return new user to
+    res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
